@@ -73,6 +73,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
     private boolean showCropGuidelines = true;
     private boolean hideBottomControls = false;
     private boolean enableRotationGesture = false;
+    private boolean localOnly = true;
     private ReadableMap options;
 
 
@@ -126,6 +127,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         showCropGuidelines = options.hasKey("showCropGuidelines") ? options.getBoolean("showCropGuidelines") : showCropGuidelines;
         hideBottomControls = options.hasKey("hideBottomControls") ? options.getBoolean("hideBottomControls") : hideBottomControls;
         enableRotationGesture = options.hasKey("enableRotationGesture") ? options.getBoolean("enableRotationGesture") : enableRotationGesture;
+        localOnly = options.hasKey("localOnly") ? options.getBoolean("localOnly") : localOnly;
         this.options = options;
     }
 
@@ -329,7 +331,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
 
             galleryIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, multiple);
             galleryIntent.setAction(Intent.ACTION_GET_CONTENT);
-            galleryIntent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
+            galleryIntent.putExtra(Intent.EXTRA_LOCAL_ONLY, localOnly);
 
             final Intent chooserIntent = Intent.createChooser(galleryIntent, "Pick an image");
             activity.startActivityForResult(chooserIntent, IMAGE_PICKER_REQUEST);

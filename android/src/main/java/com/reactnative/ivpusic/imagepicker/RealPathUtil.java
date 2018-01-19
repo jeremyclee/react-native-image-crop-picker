@@ -10,6 +10,10 @@ import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 class RealPathUtil {
   static String getRealPathFromURI(final Context context, final Uri uri) {
@@ -81,6 +85,17 @@ class RealPathUtil {
           if (isGooglePhotosUri(uri))
               return uri.getLastPathSegment();
 
+          // Not sure if we should do the same below for the old Google Photos URI as well
+          if (isNewGooglePhotosUri(uri)) {
+              try {
+                  File file = createFileFromURI(context, uri);
+                  return file.getAbsolutePath();
+
+              } catch (Exception e) {
+                  // couldn't get the remote file, fall through to data column
+              }
+          }
+
           return getDataColumn(context, uri, null, null);
       }
       // File
@@ -90,6 +105,37 @@ class RealPathUtil {
 
       return null;
   }
+
+    /**
+     * Create a file from uri to allow image picking of image in disk cache
+     * (Exemple: facebook image, google image etc..)
+     *
+     * @doc =>
+     * https://github.com/nostra13/Android-Universal-Image-Loader#load--display-task-flow
+     *
+     * @param uri
+     * @return File
+     * @throws Exception
+     */
+    private static File createFileFromURI(final Context context, Uri uri) throws Exception {
+        File file = new File(context.getExternalCacheDir(), "photo-" + uri.getLastPathSegment());
+        InputStream input = context.getContentResolver().openInputStream(uri);
+        OutputStream output = new FileOutputStream(file);
+
+        try {
+            byte[] buffer = new byte[4 * 1024];
+            int read;
+            while ((read = input.read(buffer)) != -1) {
+                output.write(buffer, 0, read);
+            }
+            output.flush();
+        } finally {
+            output.close();
+            input.close();
+        }
+
+        return file;
+    }
 
   /**
    * Get the value of the data column for this Uri. This is useful for
@@ -156,6 +202,16 @@ class RealPathUtil {
   private static boolean isGooglePhotosUri(Uri uri) {
       return "com.google.android.apps.photos.content".equals(uri.getAuthority());
   }
+
+    /**
+     * Difference taken from https://gist.github.com/ZeroBrain/b93a1cbd889b672e8b06
+     *
+     * @param uri The Uri to check.
+     * @return Whether the Uri authority is a new Google Photos uri.
+     */
+    private static boolean isNewGooglePhotosUri(Uri uri) {
+        return "com.google.android.apps.photos.contentprovider".equals(uri.getAuthority());
+    }
 
   private static String getPathToNonPrimaryVolume(Context context, String tag) {
       File[] volumes = context.getExternalCacheDirs();
